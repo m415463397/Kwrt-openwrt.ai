@@ -200,6 +200,14 @@ jobs:
       run: |
         cd openwrt
         make defconfig
+
+        # Fail early if NPS sources or selections are missing; do not silently
+        # produce a firmware without the requested LuCI NPS client.
+        test -f package/feeds/kiddin9/luci-app-nps/Makefile || { echo "ERROR: luci-app-nps feed package is missing"; exit 1; }
+        test -f package/feeds/kiddin9/nps/Makefile || { echo "ERROR: npc/nps feed package is missing"; exit 1; }
+        grep -qx 'CONFIG_PACKAGE_luci-app-nps=y' .config || { echo "ERROR: luci-app-nps is not selected after defconfig"; exit 1; }
+        grep -qx 'CONFIG_PACKAGE_npc=y' .config || { echo "ERROR: npc is not selected after defconfig"; exit 1; }
+
         if [[ ! "${{matrix.target}}" =~ (amlogic_meson8b|armsr_armv8|bcm27xx_*|rockchip_armv8|sunxi_*|x86_*|siflower_*) ]]; then
         sed -n '/# Wireless Drivers/,/# end of Wireless Drivers/p' .config | sed -e 's/=m/=n/' >>.config
         sed -i "s/\(kmod-qca.*\)=m/\1=n/" .config
